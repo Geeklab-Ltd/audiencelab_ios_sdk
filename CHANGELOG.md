@@ -5,6 +5,19 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.1.12] - 2026-03-24
+
+### Fixed
+
+- `initialize` now always applies `AudienceLabOptions` values for `isSDKEnabled`, `isMetricsEnabled`, and `isDebugEnabled` instead of preserving previously persisted state. Calling `initialize` with `isSDKEnabled = true` after a prior `setSDKEnabled(false)` now correctly re-enables the SDK.
+- Calling `initialize` when the SDK is already initialized now re-applies the provided (or default) configuration instead of silently returning.
+- `SDKConfig.setInitialConfig` now defaults to `AudienceLabOptions()` when `options` is `nil`, ensuring the SDK defaults to enabled on every `initialize` call.
+
+### Added
+
+- Advertising ID (IDFA) set via `setAdvertisingId` is now included as `ga` in creative token request when value is set.
+- Doc comment on `setAdvertisingId` clarifying it can be called before or after `initialize`; calling before ensures inclusion in the first creative token request.
+
 ## [1.1.11] - 2026-03-19
 
 ### Added

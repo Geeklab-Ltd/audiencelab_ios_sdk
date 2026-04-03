@@ -1,7 +1,7 @@
 import Foundation
 
 enum SDKConfig {
-    private static let sdkVersionValue = "1.1.11"
+    private static let sdkVersionValue = "1.1.12"
     private static let sdkTypeValue = "native_ios"
     private static let keySDKEnabled = "AudienceLabSDK_Enabled"
     private static let keyMetricsEnabled = "AudienceLabSDK_MetricsEnabled"
@@ -12,18 +12,15 @@ enum SDKConfig {
     static var apiKey: String?
 
     static func setInitialConfig(options: AudienceLabOptions?) {
-        if let options {
-            setSDKEnabled(options.isSDKEnabled)
-            setMetricsEnabled(options.isMetricsEnabled)
-            setDebugEnabled(options.isDebugEnabled)
-            setDevelopmentMode(options.isDevelopmentMode)
-            if let version = options.appVersion, !version.isEmpty {
-                setAppVersion(version)
-            } else {
-                PersistenceManager.shared.removeObject(for: keyAppVersion)
-            }
-        } else if PersistenceManager.shared.object(for: keyDevelopmentMode) == nil {
-            setDevelopmentMode(defaultDevelopmentMode())
+        let resolved = options ?? AudienceLabOptions()
+        setSDKEnabled(resolved.isSDKEnabled)
+        setMetricsEnabled(resolved.isMetricsEnabled)
+        setDebugEnabled(resolved.isDebugEnabled)
+        setDevelopmentMode(resolved.isDevelopmentMode)
+        if let version = resolved.appVersion, !version.isEmpty {
+            setAppVersion(version)
+        } else if options != nil {
+            PersistenceManager.shared.removeObject(for: keyAppVersion)
         }
     }
 

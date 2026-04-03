@@ -170,6 +170,10 @@ final class TokenManager {
             payload["ifv"] = ifv
         }
 
+        if let idfa = IdentityManager.advertisingId(), !idfa.isEmpty {
+            payload["ga"] = idfa
+        }
+
         if let lat = IdentityManager.limitAdTracking() {
             payload["lat"] = lat
         }

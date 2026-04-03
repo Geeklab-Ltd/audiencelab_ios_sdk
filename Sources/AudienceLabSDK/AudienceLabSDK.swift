@@ -130,6 +130,7 @@ private final class AudienceLabCore {
             sdkType: SDKConfig.sdkType(),
             developmentMode: SDKConfig.isDevelopmentBuild(),
             ifv: IdentityManager.idfv(),
+            ga: IdentityManager.advertisingId(),
             lat: IdentityManager.limitAdTracking(),
             wp: userProperties.whitelisted,
             bp: userProperties.blacklisted,
@@ -293,7 +294,8 @@ public final class AudienceLab: NSObject {
         defer { lock.unlock() }
 
         if core != nil {
-            Logger.debug("AudienceLabSDK already initialized")
+            SDKConfig.setInitialConfig(options: options)
+            Logger.debug("AudienceLabSDK already initialized, configuration re-applied")
             return
         }
 
@@ -426,6 +428,10 @@ public final class AudienceLab: NSObject {
         (core?.userProperties.blacklisted ?? [:]) as NSDictionary
     }
 
+    /// Sets the IDFA (Identifier for Advertisers) manually.
+    ///
+    /// Can be called before or after ``initialize(apiKey:options:)``. When called
+    /// before, the ID is included in the very first token fetch and event dispatch.
     @objc
     public static func setAdvertisingId(_ idfa: String) {
         IdentityManager.setAdvertisingId(idfa)

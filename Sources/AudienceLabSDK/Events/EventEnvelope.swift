@@ -15,6 +15,7 @@ struct EventEnvelope {
     let sdkType: String
     let developmentMode: Bool
     let ifv: String?
+    let ga: String?
     let lat: Bool?
     let wp: [String: String]
     let bp: [String: String]
@@ -45,6 +46,9 @@ struct EventEnvelope {
         }
         if let ifv {
             dictionary["ifv"] = ifv
+        }
+        if let ga, !ga.isEmpty {
+            dictionary["ga"] = ga
         }
         if let lat {
             dictionary["lat"] = lat

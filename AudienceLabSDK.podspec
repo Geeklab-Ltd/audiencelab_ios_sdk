@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = "AudienceLabSDK"
-  s.version          = "1.1.11"
+  s.version          = "1.1.14"
   s.summary          = "Native iOS SDK for AudienceLab by Geeklab."
   s.description      = <<-DESC
 AudienceLabSDK is a native iOS analytics and attribution SDK that supports
@@ -11,7 +11,7 @@ management, offline queue replay, and user property enrichment.
   s.license          = { :type => "GEEKLAB SDK EULA" }
   s.author           = { "Geeklab Team" => "support@geeklab.app" }
   s.source           = { :git => "https://github.com/Geeklab-Ltd/audiencelab_ios_sdk.git", :tag => "v#{s.version}" }
-  s.platform         = :ios, "14.0"
+  s.platform         = :ios, "13.0"
   s.swift_version    = "5.9"
   s.static_framework = true
 

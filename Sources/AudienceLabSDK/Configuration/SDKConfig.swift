@@ -1,7 +1,7 @@
 import Foundation
 
 enum SDKConfig {
-    private static let sdkVersionValue = "1.1.13"
+    private static let sdkVersionValue = "1.1.14"
     private static let sdkTypeValue = "native_ios"
     private static let keySDKEnabled = "AudienceLabSDK_Enabled"
     private static let keyMetricsEnabled = "AudienceLabSDK_MetricsEnabled"

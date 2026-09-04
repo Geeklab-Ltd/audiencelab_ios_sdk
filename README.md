@@ -14,7 +14,7 @@ AudienceLab provides privacy-centric measurement for iOS apps and games by conne
 Developers will need:
 
 - an iOS app or game project
-- minimum iOS version `14.0`
+- minimum iOS version `13.0`
 - Xcode with Swift Package Manager or CocoaPods support
 - an AudienceLab API key
 
@@ -145,7 +145,7 @@ For blacklisted `email` and `phone` values, the iOS SDK automatically normalizes
 
 Current SDK line:
 
-- minimum iOS version: `14.0`
+- minimum iOS version: `13.0`
 - Swift Package Manager product: `AudienceLabSDK`
 - CocoaPods spec: `AudienceLabSDK`
 

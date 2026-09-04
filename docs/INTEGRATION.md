@@ -4,7 +4,7 @@ This guide is for iOS developers integrating the released AudienceLab iOS SDK.
 
 ## Requirements
 
-- iOS `14.0` or newer
+- iOS `13.0` or newer
 - Xcode project or workspace
 - AudienceLab API key
 
@@ -65,6 +65,14 @@ Configuration notes:
 - `isDevelopmentMode` controls whether traffic is sent as development or release traffic.
 - `isDebugEnabled` enables local SDK debug logging and diagnostics.
 - `app_version` is derived automatically from the host app bundle version.
+
+## RevenueCat Attributes
+
+After `Purchases.configure` and before the first paywall, copy AudienceLab's device id onto the RevenueCat subscriber (safe every cold start):
+
+```swift
+Purchases.shared.attribution.setAttributes(AudienceLab.getRevenueCatAttributes())
+```
 
 ## Sending Events
 

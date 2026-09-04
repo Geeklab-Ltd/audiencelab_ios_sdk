@@ -384,6 +384,18 @@ public final class AudienceLab: NSObject {
     }
 
     @objc
+    public static func getRevenueCatAttributes() -> [String: String] {
+        revenueCatAttributes(from: IdentityManager.idfv())
+    }
+
+    static func revenueCatAttributes(from ifv: String?) -> [String: String] {
+        guard let value = ifv?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return [:]
+        }
+        return ["audienceLabId": value]
+    }
+
+    @objc
     public static func sendAdEvent(adId: String, name: String, source: String, watchTime: Double, reward: Bool, mediaSource: String, channel: String, value: Double, currency: String, dedupeKey: String? = nil) {
         let event = AdEvent(adId: adId, name: name, source: source, watchTime: watchTime, reward: reward, mediaSource: mediaSource, channel: channel, value: value, currency: currency, dedupeKey: dedupeKey)
         core?.sendAdEvent(event)

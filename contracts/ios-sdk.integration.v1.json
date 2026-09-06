@@ -1,0 +1,489 @@
+{
+  "contract_id": "audiencelab.ios_sdk.integration",
+  "contract_version": "1.0.0",
+  "schema_ref": "ios-sdk.integration.v1.schema.json",
+  "issue_refs": [
+    "GEE-510",
+    "GEE-481"
+  ],
+  "platform": "native_ios",
+  "status": "published",
+  "published_at": "2026-09-06",
+  "summary": "Agent-verifiable native iOS integration contract for AudienceLabSDK. Deterministic package identity, install steps, required signals, privacy/consent behavior, diagnostics, credential handoff rules, rollback, and machine-checkable verification evidence.",
+  "sdk": {
+    "product_name": "AudienceLabSDK",
+    "module_name": "AudienceLabSDK",
+    "sdk_type": "native_ios",
+    "version": "1.1.14",
+    "version_tag": "v1.1.14",
+    "minimum_ios_version": "13.0",
+    "swift_version": "5.9",
+    "swift_tools_version": "5.9",
+    "repository": {
+      "git_url": "https://github.com/Geeklab-Ltd/audiencelab_ios_sdk.git",
+      "https_url": "https://github.com/Geeklab-Ltd/audiencelab_ios_sdk",
+      "authority": "Geeklab-Ltd/audiencelab_ios_sdk",
+      "default_branch": "main"
+    },
+    "version_sources": [
+      {
+        "path": "AudienceLabSDK.podspec",
+        "field": "s.version"
+      },
+      {
+        "path": "Sources/AudienceLabSDK/Configuration/SDKConfig.swift",
+        "field": "sdkVersionValue"
+      },
+      {
+        "path": "contracts/ios-sdk.integration.v1.json",
+        "field": "sdk.version"
+      }
+    ],
+    "distribution": [
+      {
+        "id": "spm",
+        "name": "Swift Package Manager",
+        "recommended": true,
+        "product": "AudienceLabSDK",
+        "package_url": "https://github.com/Geeklab-Ltd/audiencelab_ios_sdk.git",
+        "version_rule": "exact_tag_or_up_to_next_major",
+        "exact_tag_example": "v1.1.14"
+      },
+      {
+        "id": "cocoapods",
+        "name": "CocoaPods",
+        "recommended": false,
+        "pod_name": "AudienceLabSDK",
+        "podspec": "AudienceLabSDK.podspec",
+        "install_snippet": "pod 'AudienceLabSDK', :git => 'https://github.com/Geeklab-Ltd/audiencelab_ios_sdk.git', :tag => 'v1.1.14'"
+      },
+      {
+        "id": "xcframework",
+        "name": "Manual XCFramework",
+        "recommended": false,
+        "asset_name": "AudienceLabSDK.xcframework.zip",
+        "notes": "Download from the matching GitHub Release asset when package managers are unavailable."
+      }
+    ]
+  },
+  "install_steps": [
+    {
+      "id": "obtain_credential",
+      "order": 1,
+      "title": "Obtain environment-scoped API key via one-time handoff",
+      "required": true,
+      "details": [
+        "Retrieve the AudienceLab application API key through the approved one-time/direct handoff channel for the entitled workspace and app environment.",
+        "Store the key in the host app secret store / CI secret store. Never commit the raw key to source control.",
+        "Never write the raw key into transcripts, ordinary logs, analytics events, or shared audit payloads.",
+        "Sandbox and production keys are distinct. Sandbox never implies analysis-ready."
+      ]
+    },
+    {
+      "id": "add_package",
+      "order": 2,
+      "title": "Add AudienceLabSDK to the iOS app target",
+      "required": true,
+      "preferred_method": "spm",
+      "methods": {
+        "spm": [
+          "In Xcode: File -> Add Package Dependencies...",
+          "Enter https://github.com/Geeklab-Ltd/audiencelab_ios_sdk.git",
+          "Select version rule pinned to v1.1.14 (or an approved compatible range).",
+          "Add product AudienceLabSDK to the app target."
+        ],
+        "cocoapods": [
+          "Add the pod line with exact tag v1.1.14 to the Podfile.",
+          "Run pod install.",
+          "Open the generated workspace."
+        ],
+        "xcframework": [
+          "Download AudienceLabSDK.xcframework.zip for v1.1.14.",
+          "Unzip and drag AudienceLabSDK.xcframework into the Xcode project.",
+          "Set Embed & Sign for the app target."
+        ]
+      }
+    },
+    {
+      "id": "initialize_sdk",
+      "order": 3,
+      "title": "Initialize SDK early in app startup",
+      "required": true,
+      "code_ref": "docs/AGENT_VERIFIABLE_INTEGRATION.md#initialize",
+      "api": "AudienceLab.initialize(apiKey:options:)",
+      "details": [
+        "Call initialize before sending events.",
+        "Use isDevelopmentMode=true for sandbox/dev traffic; false for production builds under certification.",
+        "app_version is derived from CFBundleShortVersionString unless overridden."
+      ]
+    },
+    {
+      "id": "emit_required_signals",
+      "order": 4,
+      "title": "Emit required signals for certification",
+      "required": true,
+      "details": [
+        "Confirm creative token acquisition after initialize.",
+        "Allow automatic session and retention signals to flow.",
+        "Emit at least one integrator event (custom, custom.ad, or custom.purchase) that is accepted by the backend in the target environment."
+      ]
+    },
+    {
+      "id": "privacy_consent",
+      "order": 5,
+      "title": "Apply privacy manifest and consent gates",
+      "required": true,
+      "details": [
+        "Ship/merge the SDK PrivacyInfo.xcprivacy resource with the package.",
+        "Do not call setAdvertisingId until the host has completed ATT consent when IDFA is used.",
+        "Host remains responsible for App Store privacy nutrition labels and legal declarations."
+      ]
+    },
+    {
+      "id": "verify_locally",
+      "order": 6,
+      "title": "Run machine-checkable verification evidence",
+      "required": true,
+      "command": "python3 scripts/verify_ios_integration_contract.py",
+      "evidence_path": "verification/evidence/latest.json"
+    }
+  ],
+  "public_api": {
+    "initialize": "AudienceLab.initialize(apiKey:options:)",
+    "required_entrypoints": [
+      "AudienceLab.initialize(apiKey:options:)",
+      "AudienceLab.getCreativeToken()",
+      "AudienceLab.sendAdEvent(adId:name:source:watchTime:reward:mediaSource:channel:value:currency:dedupeKey:)",
+      "AudienceLab.sendPurchaseEvent(itemId:itemName:value:currency:status:transactionId:dedupeKey:)",
+      "AudienceLab.sendCustomEvent(name:params:dedupeKey:)",
+      "AudienceLab.setSDKEnabled(_:)",
+      "AudienceLab.setMetricsCollectionEnabled(_:)",
+      "AudienceLab.setDebugEnabled(_:)",
+      "AudienceLab.reset()",
+      "AudienceLab.getSDKVersion()",
+      "AudienceLab.checkDataCollectionStatus(_:)",
+      "AudienceLab.verifyCreativeToken(_:completion:)"
+    ],
+    "source_anchor": "Sources/AudienceLabSDK/AudienceLabSDK.swift",
+    "options_type": "AudienceLabOptions",
+    "options_fields": [
+      "isSDKEnabled",
+      "isMetricsEnabled",
+      "isDebugEnabled",
+      "isDevelopmentMode",
+      "appVersion"
+    ]
+  },
+  "credentials": {
+    "kind": "application_api_key",
+    "header_name": "geeklab-api-key",
+    "environments": [
+      "sandbox",
+      "production"
+    ],
+    "handoff": {
+      "mode": "one_time_or_direct",
+      "agent_may_retrieve": true,
+      "scope": "entitled_workspace_app_only",
+      "cross_tenant_forbidden": true,
+      "prefer_short_lived_retrieval": true,
+      "never_persist_in": [
+        "git",
+        "mcp_transcripts",
+        "ordinary_logs",
+        "analytics_events",
+        "shared_audit_payloads"
+      ],
+      "audit_may_record": [
+        "issuance_metadata",
+        "use_metadata",
+        "rotation_metadata",
+        "presence_confirmation"
+      ]
+    },
+    "injection": {
+      "runtime_only": true,
+      "initialize_parameter": "apiKey",
+      "forbidden_patterns": [
+        "hardcoded key literals in app source committed to git",
+        "keys in Info.plist committed to git",
+        "keys in README examples beyond placeholders"
+      ],
+      "placeholder": "YOUR_AUDIENCELAB_API_KEY"
+    },
+    "production_gate": "Requires grant scope plus app state checks; sandbox never implies analysis-ready."
+  },
+  "required_signals": {
+    "policy_ref": "GEE-481",
+    "analysis_ready_requires": [
+      "production_or_approved_prod_like_credentials_bound",
+      "sdk_attested",
+      "accepted_production_signals_observed",
+      "freshness_within_policy_window",
+      "no_blocking_validation_failures"
+    ],
+    "automatic": [
+      {
+        "id": "session_lifecycle",
+        "event_types": [
+          "session_start",
+          "session_end"
+        ],
+        "emitter": "sdk",
+        "required_for_certification": true,
+        "notes": "Emitted by SessionManager after initialize; 30-minute timeout rollover."
+      },
+      {
+        "id": "retention",
+        "event_types": [
+          "retention"
+        ],
+        "emitter": "sdk",
+        "required_for_certification": true,
+        "notes": "Sent automatically once token is available and retention day advances."
+      },
+      {
+        "id": "creative_token",
+        "signal": "creative_token_acquired",
+        "emitter": "sdk",
+        "required_for_certification": true,
+        "check_api": "AudienceLab.getCreativeToken()",
+        "notes": "Webhook delivery is gated on a valid creative token."
+      }
+    ],
+    "integrator_emitted": {
+      "minimum_for_certification": "at_least_one",
+      "choices": [
+        {
+          "id": "custom_event",
+          "api": "AudienceLab.sendCustomEvent(name:params:dedupeKey:)",
+          "wire_type": "custom"
+        },
+        {
+          "id": "ad_event",
+          "api": "AudienceLab.sendAdEvent(...)",
+          "wire_type": "custom.ad"
+        },
+        {
+          "id": "purchase_event",
+          "api": "AudienceLab.sendPurchaseEvent(...)",
+          "wire_type": "custom.purchase"
+        }
+      ]
+    },
+    "envelope_required_fields": [
+      "type",
+      "eid",
+      "created_at",
+      "creativeToken",
+      "sdk_version",
+      "app_version",
+      "sdk_type",
+      "dev",
+      "payload"
+    ],
+    "identity_fields": {
+      "ifv": "Identifier for Vendor when available",
+      "ga": "Optional IDFA only after host ATT consent via setAdvertisingId",
+      "lat": "Optional limit-ad-tracking flag when provided by host"
+    },
+    "first_signal_checks": [
+      "AudienceLab.isInitialized == true",
+      "AudienceLab.getCreativeToken() returns non-nil non-organic token",
+      "At least one integrator event accepted (request result success or backend readiness evidence)",
+      "AudienceLab.checkDataCollectionStatus reports collection allowed when policy requires"
+    ]
+  },
+  "privacy_and_consent": {
+    "tracking": {
+      "sdk_requests_att_prompt": false,
+      "idfa_collection": "host_controlled",
+      "idfa_api": "AudienceLab.setAdvertisingId(_:)",
+      "clear_idfa_api": "AudienceLab.clearAdvertisingId()",
+      "rule": "Do not set IDFA until the host app has obtained ATT authorization when advertising identifier use is intended."
+    },
+    "metrics_toggles": {
+      "master": "AudienceLab.setSDKEnabled(_:)",
+      "metrics": "AudienceLab.setMetricsCollectionEnabled(_:)",
+      "debug": "AudienceLab.setDebugEnabled(_:)"
+    },
+    "user_properties": {
+      "whitelisted_set": "AudienceLabUserPropertySet.whitelisted",
+      "blacklisted_set": "AudienceLabUserPropertySet.blacklisted",
+      "hashed_blacklisted_keys": [
+        "email",
+        "phone"
+      ],
+      "hash": "SHA-256 after normalization",
+      "reserved_wp_prefix": "_"
+    },
+    "privacy_manifest": {
+      "path": "Sources/AudienceLabSDK/Resources/PrivacyInfo.xcprivacy",
+      "bundled_with_sdk": true,
+      "ns_privacy_tracking": false,
+      "accessed_api_types": [
+        {
+          "category": "NSPrivacyAccessedAPICategoryUserDefaults",
+          "reasons": [
+            "CA92.1"
+          ]
+        }
+      ],
+      "collected_data_types_summary": [
+        "Device ID (IDFV; optional IDFA when host-supplied)",
+        "Product interaction / analytics events",
+        "Device / coarse hardware characteristics used for measurement",
+        "Purchase and ad performance signals when the integrator emits them"
+      ],
+      "network_endpoint": "https://analytics.geeklab.app",
+      "host_app_responsibilities": [
+        "App Store privacy nutrition labels",
+        "ATT prompt when IDFA is used",
+        "Age / export / legal declarations (human-owned per GEE-481)"
+      ]
+    },
+    "permissions": {
+      "required_plist_keys_for_initialize": [],
+      "notes": "No additional app permissions are required to initialize the SDK."
+    }
+  },
+  "diagnostics": {
+    "runtime_flags": [
+      "AudienceLabOptions.isDebugEnabled",
+      "AudienceLab.setDebugEnabled(_:)"
+    ],
+    "debug_only_apis": [
+      "AudienceLab.getIdentityDebugSnapshot()",
+      "AudienceLab.getTokenDebugSnapshot()",
+      "AudienceLab.getDeviceDebugSnapshot()",
+      "AudienceLab.getQueueDebugSnapshot()",
+      "AudienceLab.setRequestDebugListener(_:)"
+    ],
+    "always_available_checks": [
+      "AudienceLab.isInitialized",
+      "AudienceLab.getCreativeToken()",
+      "AudienceLab.getQueueSize()",
+      "AudienceLab.getSDKVersion()",
+      "AudienceLab.getAppVersion()",
+      "AudienceLab.getSessionId()",
+      "AudienceLab.getSessionIndex()",
+      "AudienceLab.checkDataCollectionStatus(_:)",
+      "AudienceLab.verifyCreativeToken(_:completion:)",
+      "AudienceLab.setRequestResultCallback(_:)"
+    ],
+    "secret_hygiene": {
+      "api_key_in_debug_preview_only": true,
+      "identity_values_masked_in_debug_snapshots": true,
+      "forbid_raw_key_in_verification_evidence": true
+    }
+  },
+  "rollback": {
+    "required": true,
+    "steps": [
+      {
+        "id": "disable_sdk",
+        "action": "AudienceLab.setSDKEnabled(false) and/or AudienceLab.setMetricsCollectionEnabled(false)",
+        "effect": "Stops new metric emission without uninstalling the package."
+      },
+      {
+        "id": "reset_local_state",
+        "action": "AudienceLab.reset()",
+        "effect": "Clears in-memory core and AudienceLabSDK_ UserDefaults keys; drops API key from runtime memory."
+      },
+      {
+        "id": "remove_package",
+        "action": "Remove SPM/CocoaPods/XCFramework dependency and rebuild",
+        "effect": "Eliminates SDK binary from the app."
+      },
+      {
+        "id": "revoke_credential",
+        "action": "Revoke or rotate the environment API key via Audiencelab credential lifecycle",
+        "effect": "Invalidates previously handed-off secrets; do not leave revoked keys in CI logs."
+      },
+      {
+        "id": "pin_previous_version",
+        "action": "If rolling back a bad upgrade, re-pin the last known-good SDK tag and rebuild",
+        "effect": "Restores prior native behavior without store submission automation."
+      }
+    ],
+    "evidence_after_rollback": [
+      "Verification harness still passes for remaining docs/contract artifacts if SDK files remain",
+      "No raw API key present in git diff or verification evidence",
+      "App builds without AudienceLab imports after package removal"
+    ]
+  },
+  "verification": {
+    "harness": {
+      "command": "python3 scripts/verify_ios_integration_contract.py",
+      "working_directory": "repository_root",
+      "requires_xcode": false,
+      "requires_network": false,
+      "exit_codes": {
+        "0": "all checks passed",
+        "1": "one or more checks failed"
+      }
+    },
+    "evidence": {
+      "latest_path": "verification/evidence/latest.json",
+      "schema": {
+        "contract_id": "string",
+        "contract_version": "string",
+        "sdk_version": "string",
+        "generated_at": "ISO-8601 UTC",
+        "passed": "boolean",
+        "checks": "array of {id,status,detail}"
+      },
+      "must_not_contain": [
+        "raw api keys",
+        "Authorization header values",
+        "geeklab-api-key secret values"
+      ]
+    },
+    "checks": [
+      "contract_parses",
+      "contract_schema_shape",
+      "version_consistency",
+      "public_api_symbols_present",
+      "privacy_manifest_present",
+      "docs_present",
+      "credential_rules_explicit",
+      "rollback_rules_explicit",
+      "no_secret_literals_in_contract_docs",
+      "out_of_scope_store_submit_declared"
+    ]
+  },
+  "out_of_scope": [
+    {
+      "id": "app_store_connect_submit",
+      "phase": 3,
+      "reason": "Store submission automation is Phase 3 / GEE-526; not part of this integration contract."
+    },
+    {
+      "id": "signed_build_attestations",
+      "phase": 3,
+      "reason": "Signed artifact attestations are GEE-528; this contract provides integration evidence only."
+    },
+    {
+      "id": "backend_readiness_state_machine",
+      "issue": "GEE-525",
+      "reason": "Backend analysis-ready state machine consumes signals; SDK contract defines emitter-side requirements."
+    }
+  ],
+  "human_docs": [
+    "docs/AGENT_VERIFIABLE_INTEGRATION.md",
+    "docs/INTEGRATION.md",
+    "README.md"
+  ],
+  "compatibility": {
+    "supported_platforms": [
+      "iOS"
+    ],
+    "minimum_ios_version": "13.0",
+    "unsupported_in_this_contract": [
+      "macOS",
+      "tvOS",
+      "watchOS",
+      "visionOS"
+    ]
+  }
+}

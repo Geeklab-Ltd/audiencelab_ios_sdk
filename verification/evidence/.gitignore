@@ -1,0 +1,2 @@
+# Ignore ephemeral local verification copies; latest.json is committed as the golden evidence snapshot when green.
+*.tmp

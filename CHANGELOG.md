@@ -5,6 +5,12 @@ All notable changes to this package are documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Published agent-verifiable native iOS integration contract (`contracts/ios-sdk.integration.v1.json`) with schema, human docs, privacy manifest packaging, and a machine-checkable verification harness (`scripts/verify_ios_integration_contract.py`) for GEE-510.
+
 ## [1.1.14] - 2026-09-04
 
 ### Added

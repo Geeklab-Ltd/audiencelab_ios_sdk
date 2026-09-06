@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Geeklab-Ltd/audiencelab_ios_sdk/contracts/ios-sdk.integration.v1.schema.json",
+  "title": "AudienceLab iOS SDK Agent-Verifiable Integration Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_id",
+    "contract_version",
+    "schema_ref",
+    "issue_refs",
+    "platform",
+    "status",
+    "sdk",
+    "install_steps",
+    "public_api",
+    "credentials",
+    "required_signals",
+    "privacy_and_consent",
+    "diagnostics",
+    "rollback",
+    "verification",
+    "out_of_scope",
+    "human_docs"
+  ],
+  "properties": {
+    "contract_id": {
+      "const": "audiencelab.ios_sdk.integration"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "schema_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "issue_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "platform": {
+      "const": "native_ios"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "deprecated"
+      ]
+    },
+    "published_at": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "sdk": {
+      "type": "object",
+      "required": [
+        "product_name",
+        "module_name",
+        "sdk_type",
+        "version",
+        "version_tag",
+        "minimum_ios_version",
+        "repository",
+        "distribution",
+        "version_sources"
+      ],
+      "properties": {
+        "product_name": {
+          "type": "string"
+        },
+        "module_name": {
+          "type": "string"
+        },
+        "sdk_type": {
+          "const": "native_ios"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "version_tag": {
+          "type": "string",
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "minimum_ios_version": {
+          "type": "string"
+        },
+        "swift_version": {
+          "type": "string"
+        },
+        "swift_tools_version": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "object",
+          "required": [
+            "git_url",
+            "authority"
+          ],
+          "properties": {
+            "git_url": {
+              "type": "string"
+            },
+            "https_url": {
+              "type": "string"
+            },
+            "authority": {
+              "type": "string"
+            },
+            "default_branch": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        },
+        "version_sources": {
+          "type": "array",
+          "minItems": 1
+        },
+        "distribution": {
+          "type": "array",
+          "minItems": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "install_steps": {
+      "type": "array",
+      "minItems": 1
+    },
+    "public_api": {
+      "type": "object",
+      "required": [
+        "required_entrypoints",
+        "source_anchor"
+      ],
+      "additionalProperties": true
+    },
+    "credentials": {
+      "type": "object",
+      "required": [
+        "kind",
+        "handoff",
+        "injection"
+      ],
+      "additionalProperties": true
+    },
+    "required_signals": {
+      "type": "object",
+      "required": [
+        "automatic",
+        "integrator_emitted",
+        "first_signal_checks"
+      ],
+      "additionalProperties": true
+    },
+    "privacy_and_consent": {
+      "type": "object",
+      "required": [
+        "tracking",
+        "privacy_manifest"
+      ],
+      "additionalProperties": true
+    },
+    "diagnostics": {
+      "type": "object",
+      "required": [
+        "always_available_checks",
+        "secret_hygiene"
+      ],
+      "additionalProperties": true
+    },
+    "rollback": {
+      "type": "object",
+      "required": [
+        "required",
+        "steps"
+      ],
+      "additionalProperties": true
+    },
+    "verification": {
+      "type": "object",
+      "required": [
+        "harness",
+        "evidence",
+        "checks"
+      ],
+      "additionalProperties": true
+    },
+    "out_of_scope": {
+      "type": "array",
+      "minItems": 1
+    },
+    "human_docs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

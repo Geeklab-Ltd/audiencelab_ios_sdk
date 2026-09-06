@@ -1,0 +1,89 @@
+{
+  "contract_id": "audiencelab.ios_sdk.integration",
+  "contract_version": "1.0.0",
+  "sdk_version": "1.1.14",
+  "generated_at": "2026-09-06T18:33:14Z",
+  "harness": "scripts/verify_ios_integration_contract.py",
+  "passed": true,
+  "checks": [
+    {
+      "id": "contract_parses",
+      "status": "pass",
+      "detail": "Parsed contracts/ios-sdk.integration.v1.json"
+    },
+    {
+      "id": "contract_schema_present",
+      "status": "pass",
+      "detail": "Schema found: contracts/ios-sdk.integration.v1.schema.json"
+    },
+    {
+      "id": "contract_schema_shape",
+      "status": "pass",
+      "detail": "Contract top-level shape valid"
+    },
+    {
+      "id": "version_consistency",
+      "status": "pass",
+      "detail": "Versions aligned at 1.1.14"
+    },
+    {
+      "id": "version_tag_matches",
+      "status": "pass",
+      "detail": "version_tag=v1.1.14"
+    },
+    {
+      "id": "public_api_symbols_present",
+      "status": "pass",
+      "detail": "All required public API anchors found"
+    },
+    {
+      "id": "privacy_manifest_present",
+      "status": "pass",
+      "detail": "Privacy manifest ok"
+    },
+    {
+      "id": "privacy_manifest_packaging",
+      "status": "pass",
+      "detail": "Package.swift and podspec reference PrivacyInfo.xcprivacy"
+    },
+    {
+      "id": "docs_present",
+      "status": "pass",
+      "detail": "Human docs present"
+    },
+    {
+      "id": "credential_rules_explicit",
+      "status": "pass",
+      "detail": "Credential one-time handoff and secret hygiene rules present"
+    },
+    {
+      "id": "rollback_rules_explicit",
+      "status": "pass",
+      "detail": "Rollback steps explicit"
+    },
+    {
+      "id": "no_secret_literals_in_contract_docs",
+      "status": "pass",
+      "detail": "No secret-like literals found"
+    },
+    {
+      "id": "out_of_scope_store_submit_declared",
+      "status": "pass",
+      "detail": "App Store Connect submit declared out of scope"
+    },
+    {
+      "id": "required_signals_defined",
+      "status": "pass",
+      "detail": "Required signals defined"
+    },
+    {
+      "id": "issue_refs_gee510",
+      "status": "pass",
+      "detail": "issue_refs=['GEE-481', 'GEE-510']"
+    }
+  ],
+  "notes": [
+    "Evidence intentionally omits secrets and network calls.",
+    "Store submission automation is out of scope for GEE-510."
+  ]
+}

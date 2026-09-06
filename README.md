@@ -148,9 +148,25 @@ Current SDK line:
 - minimum iOS version: `13.0`
 - Swift Package Manager product: `AudienceLabSDK`
 - CocoaPods spec: `AudienceLabSDK`
+- agent-verifiable contract: `contracts/ios-sdk.integration.v1.json` (SDK `1.1.14`)
+
+## Agent-verifiable integration contract
+
+Agents integrating this SDK should follow the published contract rather than private instructions:
+
+- Machine-readable contract: [`contracts/ios-sdk.integration.v1.json`](contracts/ios-sdk.integration.v1.json)
+- Human companion: [`docs/AGENT_VERIFIABLE_INTEGRATION.md`](docs/AGENT_VERIFIABLE_INTEGRATION.md)
+- Verification harness (no Xcode required):
+
+```bash
+python3 scripts/verify_ios_integration_contract.py
+```
+
+Evidence is written to `verification/evidence/latest.json`. Credential handoff is one-time; never place raw API keys in git, transcripts, or logs. App Store Connect submission is out of scope for this contract.
 
 # Additional References
 
+- [Agent-verifiable integration contract](docs/AGENT_VERIFIABLE_INTEGRATION.md)
 - [Integration Guide](docs/INTEGRATION.md)
 - [Changelog](CHANGELOG.md)
 - [License](LICENSE.md)

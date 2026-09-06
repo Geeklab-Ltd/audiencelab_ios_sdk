@@ -16,7 +16,10 @@ let package = Package(
     targets: [
         .target(
             name: "AudienceLabSDK",
-            path: "Sources/AudienceLabSDK"
+            path: "Sources/AudienceLabSDK",
+            resources: [
+                .copy("Resources/PrivacyInfo.xcprivacy")
+            ]
         )
     ]
 )

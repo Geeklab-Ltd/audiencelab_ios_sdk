@@ -180,3 +180,17 @@ After integration, verify:
 3. a creative token is obtained successfully with your API key
 4. ad, purchase, and custom events can be sent without runtime errors
 5. queued events flush after token availability
+
+For agent-driven certification without hidden steps, use the published contract and harness:
+
+- [`AGENT_VERIFIABLE_INTEGRATION.md`](AGENT_VERIFIABLE_INTEGRATION.md)
+- [`contracts/ios-sdk.integration.v1.json`](../contracts/ios-sdk.integration.v1.json)
+- `python3 scripts/verify_ios_integration_contract.py` → `verification/evidence/latest.json`
+
+## Privacy manifest
+
+The SDK ships `Sources/AudienceLabSDK/Resources/PrivacyInfo.xcprivacy` (UserDefaults reason `CA92.1`, `NSPrivacyTracking = false`). Host apps remain responsible for ATT when using IDFA via `setAdvertisingId`, App Store nutrition labels, and legal declarations.
+
+## Credentials and rollback
+
+Inject the AudienceLab API key at runtime from a secret store. Prefer one-time handoff; never commit raw keys or write them into transcripts/logs. To roll back: disable metrics / call `AudienceLab.reset()`, remove the package dependency, and revoke or rotate the environment credential.

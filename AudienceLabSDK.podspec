@@ -16,5 +16,8 @@ management, offline queue replay, and user property enrichment.
   s.static_framework = true
 
   s.source_files = "Sources/AudienceLabSDK/**/*.swift"
+  s.resource_bundles = {
+    "AudienceLabSDK" => ["Sources/AudienceLabSDK/Resources/PrivacyInfo.xcprivacy"]
+  }
   s.frameworks = "Foundation", "UIKit", "Network", "Metal"
 end

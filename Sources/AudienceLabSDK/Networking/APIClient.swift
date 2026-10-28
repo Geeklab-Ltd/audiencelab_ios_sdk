@@ -8,7 +8,15 @@ enum APIClientError: Error {
     case transport(Error)
 }
 
-final class APIClient {
+protocol TokenAPIClient {
+    func post(
+        path: String,
+        body: [String: Any],
+        completion: @escaping (Result<[String: Any], APIClientError>) -> Void
+    )
+}
+
+final class APIClient: TokenAPIClient {
     static let shared = APIClient()
     private let session: URLSession
     #if DEBUG

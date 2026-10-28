@@ -120,6 +120,7 @@ private final class AudienceLabCore {
             eventId: UUID().uuidString.lowercased(),
             createdAt: DateUtils.nowTimestamp(),
             creativeToken: tokenManager.currentTokenOrOrganic(),
+            installId: tokenManager.installId,
             deviceName: device.deviceName,
             deviceModel: device.deviceModel,
             osSystem: device.osVersion,
@@ -229,6 +230,10 @@ private final class AudienceLabCore {
             }
         } else if (normalized["creativeToken"] as? String)?.isEmpty != false {
             normalized["creativeToken"] = tokenManager.currentTokenOrOrganic()
+        }
+
+        if normalized["x7"] == nil, let installId = tokenManager.installId {
+            normalized["x7"] = installId
         }
 
         return normalized

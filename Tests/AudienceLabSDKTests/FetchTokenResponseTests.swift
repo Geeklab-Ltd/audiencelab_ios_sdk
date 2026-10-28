@@ -3,13 +3,22 @@ import XCTest
 @testable import AudienceLabSDK
 
 final class FetchTokenResponseTests: XCTestCase {
+    private var suiteName: String!
+    private var defaults: UserDefaults!
+    private var persistence: PersistenceManager!
+
     override func setUp() {
         super.setUp()
-        clearPersistedSDKState()
+        suiteName = "FetchTokenResponseTests.\(UUID().uuidString)"
+        defaults = UserDefaults(suiteName: suiteName)
+        persistence = PersistenceManager(defaults: defaults)
     }
 
     override func tearDown() {
-        clearPersistedSDKState()
+        defaults.removePersistentDomain(forName: suiteName)
+        persistence = nil
+        defaults = nil
+        suiteName = nil
         super.tearDown()
     }
 
@@ -33,7 +42,12 @@ final class FetchTokenResponseTests: XCTestCase {
     func testOptionalLifecycleFieldsParseAndRequiredStatePersists() {
         let apiClient = APIClient(session: .shared)
         let userProperties = UserPropertiesManager()
-        let tokenManager = TokenManager(apiClient: apiClient, userPropertiesManager: userProperties)
+        let tokenManager = TokenManager(
+            apiClient: apiClient,
+            userPropertiesManager: userProperties,
+            persistence: persistence,
+            installInstanceStore: FixedInstallInstanceStore(identifier: "local-install-123")
+        )
         let refreshAfter = "2026-12-01T10:15:30.123Z"
 
         let token = tokenManager.processFetchTokenResponse([
@@ -51,10 +65,15 @@ final class FetchTokenResponseTests: XCTestCase {
         XCTAssertEqual(tokenManager.lifecycleRefreshAfter, parseFractionalISO8601(refreshAfter))
         XCTAssertEqual(userProperties.whitelisted["_network"], "organic")
 
-        let restored = TokenManager(apiClient: apiClient, userPropertiesManager: UserPropertiesManager())
+        let restored = TokenManager(
+            apiClient: apiClient,
+            userPropertiesManager: UserPropertiesManager(),
+            persistence: persistence,
+            installInstanceStore: FixedInstallInstanceStore(identifier: "local-install-123")
+        )
         XCTAssertEqual(restored.installId, "install-123")
         XCTAssertEqual(restored.lifecycleRefreshAfter, tokenManager.lifecycleRefreshAfter)
-        XCTAssertNil(restored.lifecycleDecisionCode)
+        XCTAssertEqual(restored.lifecycleDecisionCode, "same_install.instance_match")
     }
 
     func testUnknownDecisionCodeRemainsAvailableForForwardCompatibility() {
@@ -78,7 +97,9 @@ final class FetchTokenResponseTests: XCTestCase {
     func testMalformedOptionalFieldsDoNotInvalidateToken() {
         let tokenManager = TokenManager(
             apiClient: APIClient(session: .shared),
-            userPropertiesManager: UserPropertiesManager()
+            userPropertiesManager: UserPropertiesManager(),
+            persistence: persistence,
+            installInstanceStore: FixedInstallInstanceStore(identifier: "local-install-123")
         )
 
         let token = tokenManager.processFetchTokenResponse([
@@ -94,16 +115,43 @@ final class FetchTokenResponseTests: XCTestCase {
         XCTAssertNil(tokenManager.lifecycleRefreshAfter)
     }
 
-    private func clearPersistedSDKState() {
-        let defaults = UserDefaults.standard
-        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("AudienceLabSDK_") {
-            defaults.removeObject(forKey: key)
-        }
+    func testLegacyResponseDoesNotClearCachedLifecycleContext() {
+        let tokenManager = TokenManager(
+            apiClient: APIClient(session: .shared),
+            userPropertiesManager: UserPropertiesManager(),
+            persistence: persistence,
+            installInstanceStore: FixedInstallInstanceStore(identifier: "local-install-123")
+        )
+
+        _ = tokenManager.processFetchTokenResponse([
+            "token": "v2-token",
+            "x7": "install-123",
+            "x9": "same_install.instance_match",
+            "xm": "2026-12-01T10:15:30Z"
+        ])
+        let refreshAfter = tokenManager.lifecycleRefreshAfter
+
+        _ = tokenManager.processFetchTokenResponse([
+            "token": "legacy-token",
+            "message": "ok"
+        ])
+
+        XCTAssertEqual(tokenManager.installId, "install-123")
+        XCTAssertEqual(tokenManager.lifecycleDecisionCode, "same_install.instance_match")
+        XCTAssertEqual(tokenManager.lifecycleRefreshAfter, refreshAfter)
     }
 
     private func parseFractionalISO8601(_ value: String) -> Date? {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.date(from: value)
+    }
+}
+
+struct FixedInstallInstanceStore: InstallInstanceIDProviding {
+    let identifier: String
+
+    func loadOrCreate() throws -> String {
+        identifier
     }
 }

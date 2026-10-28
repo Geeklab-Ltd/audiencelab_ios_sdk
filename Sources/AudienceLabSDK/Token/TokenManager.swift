@@ -1,15 +1,21 @@
 import Foundation
 
 final class TokenManager {
+    private let lifecycleSchemaVersion = 2
     private let keyCreativeToken = "AudienceLabSDK_CreativeToken"
     private let keyInstallId = "AudienceLabSDK_InstallId"
+    private let keyLifecycleDecisionCode = "AudienceLabSDK_LifecycleDecisionCode"
     private let keyLifecycleRefreshAfter = "AudienceLabSDK_LifecycleRefreshAfter"
+    private let keyRegisteredInstallInstanceId = "AudienceLabSDK_RegisteredInstallInstanceId"
+    private let keyLifecycleRegistrationVersion = "AudienceLabSDK_LifecycleRegistrationVersion"
     private let initialDelayMs: Int = 5000
     private let maxDelayMs: Int = 300_000
     private let maxAttempts: Int = 10
 
-    private let apiClient: APIClient
+    private let apiClient: TokenAPIClient
     private let userPropertiesManager: UserPropertiesManager
+    private let persistence: PersistenceManager
+    let installInstanceId: String
     private(set) var creativeToken: String?
     private(set) var installId: String?
     private(set) var lifecycleDecisionCode: String?
@@ -21,15 +27,37 @@ final class TokenManager {
     var onTokenAvailable: ((String) -> Void)?
 
     private var isFetching = false
+    private var isLifecycleRegistrationInFlight = false
+    private var registeredInstallInstanceId: String?
+    private var lifecycleRegistrationVersion: Int
     private var waiters: [(Result<String, Error>) -> Void] = []
     private let stateLock = NSLock()
 
-    init(apiClient: APIClient, userPropertiesManager: UserPropertiesManager) {
+    init(
+        apiClient: TokenAPIClient,
+        userPropertiesManager: UserPropertiesManager,
+        persistence: PersistenceManager = .shared,
+        installInstanceStore: InstallInstanceIDProviding = InstallInstanceStore()
+    ) {
         self.apiClient = apiClient
         self.userPropertiesManager = userPropertiesManager
-        self.creativeToken = normalizeValidToken(PersistenceManager.shared.string(for: keyCreativeToken))
-        self.installId = normalizeNonEmptyString(PersistenceManager.shared.string(for: keyInstallId))
-        self.lifecycleRefreshAfter = PersistenceManager.shared.object(for: keyLifecycleRefreshAfter) as? Date
+        self.persistence = persistence
+        self.installInstanceId = (try? installInstanceStore.loadOrCreate()) ?? UUID().uuidString.lowercased()
+        self.lifecycleRegistrationVersion = persistence.integer(for: keyLifecycleRegistrationVersion, defaultValue: 0)
+        self.registeredInstallInstanceId = persistence.string(for: keyRegisteredInstallInstanceId)
+        self.creativeToken = normalizeValidToken(persistence.string(for: keyCreativeToken))
+        self.installId = normalizeNonEmptyString(persistence.string(for: keyInstallId))
+        self.lifecycleDecisionCode = normalizeNonEmptyString(persistence.string(for: keyLifecycleDecisionCode))
+        self.lifecycleRefreshAfter = persistence.object(for: keyLifecycleRefreshAfter) as? Date
+        if let registeredInstallInstanceId,
+           registeredInstallInstanceId != installInstanceId {
+            self.installId = nil
+            self.lifecycleDecisionCode = nil
+            self.lifecycleRefreshAfter = nil
+            persistence.removeObject(for: keyInstallId)
+            persistence.removeObject(for: keyLifecycleDecisionCode)
+            persistence.removeObject(for: keyLifecycleRefreshAfter)
+        }
         if creativeToken != nil {
             lastFetchStatus = "token_available"
         }
@@ -39,6 +67,7 @@ final class TokenManager {
         if let cached = normalizeValidToken(creativeToken) {
             lastFetchStatus = "token_available"
             completion(.success(cached))
+            registerLifecycleIfNeeded()
             return
         }
 
@@ -139,6 +168,7 @@ final class TokenManager {
         setToken(token)
         mergeServerWhitelistedProperties(from: payload)
         applyLifecycleResponse(response.lifecycle)
+        markLifecycleRegistrationComplete()
         return token
     }
 
@@ -171,6 +201,8 @@ final class TokenManager {
         }
 
         var payload: [String: Any] = [
+            "x0": lifecycleSchemaVersion,
+            "x1": installInstanceId,
             "data": data,
             "type": "device-metrics",
             "created_at": DateUtils.nowTimestamp(),
@@ -240,7 +272,7 @@ final class TokenManager {
         let normalized = normalizeValidToken(token)
         let previous = creativeToken
         creativeToken = normalized
-        PersistenceManager.shared.set(normalized, for: keyCreativeToken)
+        persistence.set(normalized, for: keyCreativeToken)
         if let normalized, normalized != previous {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
@@ -252,17 +284,53 @@ final class TokenManager {
     private func applyLifecycleResponse(_ response: LifecycleResponse?) {
         guard let response else { return }
 
-        lifecycleDecisionCode = response.decisionCode
+        if let decisionCode = normalizeNonEmptyString(response.decisionCode) {
+            lifecycleDecisionCode = decisionCode
+            persistence.set(decisionCode, for: keyLifecycleDecisionCode)
+        }
 
         if let installId = normalizeNonEmptyString(response.installId) {
             self.installId = installId
-            PersistenceManager.shared.set(installId, for: keyInstallId)
+            persistence.set(installId, for: keyInstallId)
         }
 
         if let refreshAfter = response.refreshAfter {
             lifecycleRefreshAfter = refreshAfter
-            PersistenceManager.shared.set(refreshAfter, for: keyLifecycleRefreshAfter)
+            persistence.set(refreshAfter, for: keyLifecycleRefreshAfter)
         }
+    }
+
+    private func registerLifecycleIfNeeded() {
+        stateLock.lock()
+        let currentInstanceIsRegistered = lifecycleRegistrationVersion >= lifecycleSchemaVersion
+            && registeredInstallInstanceId == installInstanceId
+        let shouldRegister = !currentInstanceIsRegistered && !isLifecycleRegistrationInFlight
+        if shouldRegister {
+            isLifecycleRegistrationInFlight = true
+        }
+        stateLock.unlock()
+
+        guard shouldRegister else { return }
+
+        apiClient.post(path: Endpoints.fetchToken, body: fetchTokenPayload()) { [weak self] result in
+            guard let self else { return }
+
+            self.stateLock.lock()
+            self.isLifecycleRegistrationInFlight = false
+            self.stateLock.unlock()
+
+            guard case .success(let payload) = result else { return }
+            _ = self.processFetchTokenResponse(payload)
+        }
+    }
+
+    private func markLifecycleRegistrationComplete() {
+        stateLock.lock()
+        lifecycleRegistrationVersion = lifecycleSchemaVersion
+        registeredInstallInstanceId = installInstanceId
+        stateLock.unlock()
+        persistence.set(lifecycleSchemaVersion, for: keyLifecycleRegistrationVersion)
+        persistence.set(installInstanceId, for: keyRegisteredInstallInstanceId)
     }
 
     private func normalizeValidToken(_ token: String?) -> String? {

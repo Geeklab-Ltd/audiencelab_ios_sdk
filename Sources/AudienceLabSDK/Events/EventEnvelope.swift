@@ -5,6 +5,7 @@ struct EventEnvelope {
     let eventId: String
     let createdAt: String
     let creativeToken: String
+    let installId: String?
     let deviceName: String
     let deviceModel: String
     let osSystem: String
@@ -43,6 +44,9 @@ struct EventEnvelope {
 
         if let retentionDay {
             dictionary["retention_day"] = retentionDay
+        }
+        if let installId, !installId.isEmpty {
+            dictionary["x7"] = installId
         }
         if let ifv {
             dictionary["ifv"] = ifv

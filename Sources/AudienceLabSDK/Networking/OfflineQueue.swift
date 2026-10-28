@@ -139,7 +139,7 @@ final class OfflineQueue {
                     requestName: event.type == "custom" ? buildCustomRequestName(from: event.payload) : event.type,
                     eventId: event.eventId,
                     type: event.type,
-                    payload: DebugUtilities.jsonString(event.payload),
+                    payload: DebugUtilities.sanitizedJSONString(event.payload),
                     queuedAtMillis: NSNumber(value: event.queuedAt)
                 )
             }

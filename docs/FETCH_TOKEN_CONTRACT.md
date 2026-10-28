@@ -12,6 +12,8 @@ The Audiencelab iOS SDK registers a local installation with the existing fetch-t
 
 The install-instance ID is stored in the app's Application Support directory and excluded from device backups. It survives app and SDK updates, is deleted with the app sandbox on uninstall, and is not restored from backup. The SDK does not send platform installation timestamps in this contract.
 
+If stable backup-excluded storage is unavailable, the SDK fails closed for lifecycle handling: it omits `x0`, `x1`, and cached lifecycle context while continuing the legacy creative-token flow. It does not generate an in-memory replacement ID that could be mistaken for a reinstall.
+
 ## Existing response fields
 
 | Field | Type | Handling |
@@ -35,3 +37,5 @@ When an upgraded SDK already has a creative token but has not registered lifecyc
 Ordinary events include `x7` whenever a canonical install ID has been cached. Queued events created before registration are enriched with the cached `x7` when they are later flushed.
 
 This contract does not collect installation evidence, detect reinstalls, schedule refresh requests, perform click matching, or decide re-attribution eligibility. Those behaviors belong to separate lifecycle and backend work.
+
+In DEBUG builds, request and response diagnostics redact `creativeToken`, `token`, `x1`, and `x7` recursively. Non-JSON response bodies are omitted from diagnostics.

@@ -80,13 +80,13 @@ final class APIClient: TokenAPIClient {
             guard (200...299).contains(httpResponse.statusCode) else {
                 let message = parsed["message"] as? String ?? "Request failed"
                 #if DEBUG
-                self.emitDebug(path: path, body: body, statusCode: httpResponse.statusCode, responseBody: DebugUtilities.jsonString(parsed), success: false, errorMessage: message, apiKey: apiKey)
+                self.emitDebug(path: path, body: body, statusCode: httpResponse.statusCode, responseBody: parsed, success: false, errorMessage: message, apiKey: apiKey)
                 #endif
                 completion(.failure(.server(statusCode: httpResponse.statusCode, message: message)))
                 return
             }
             #if DEBUG
-            self.emitDebug(path: path, body: body, statusCode: httpResponse.statusCode, responseBody: DebugUtilities.jsonString(parsed), success: true, errorMessage: nil, apiKey: apiKey)
+            self.emitDebug(path: path, body: body, statusCode: httpResponse.statusCode, responseBody: parsed, success: true, errorMessage: nil, apiKey: apiKey)
             #endif
             completion(.success(parsed))
         }.resume()
@@ -97,7 +97,7 @@ final class APIClient: TokenAPIClient {
         path: String,
         body: [String: Any]?,
         statusCode: Int?,
-        responseBody: String?,
+        responseBody: Any?,
         success: Bool,
         errorMessage: String?,
         apiKey: String?
@@ -108,9 +108,9 @@ final class APIClient: TokenAPIClient {
         let entry = RequestDebugEntry(
             requestName: requestName,
             path: normalizedPath,
-            requestBody: body.map(DebugUtilities.jsonString),
+            requestBody: body.map { DebugUtilities.sanitizedJSONString($0) },
             responseStatusCode: statusCode.map(NSNumber.init(value:)),
-            responseBody: responseBody,
+            responseBody: responseBody.map { DebugUtilities.sanitizedJSONString($0) },
             success: success,
             errorMessage: errorMessage,
             authHeaderPreview: DebugUtilities.apiKeyPreview(apiKey)

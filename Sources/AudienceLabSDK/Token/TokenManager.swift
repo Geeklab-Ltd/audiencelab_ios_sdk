@@ -15,7 +15,7 @@ final class TokenManager {
     private let apiClient: TokenAPIClient
     private let userPropertiesManager: UserPropertiesManager
     private let persistence: PersistenceManager
-    let installInstanceId: String
+    let installInstanceId: String?
     private(set) var creativeToken: String?
     private(set) var installId: String?
     private(set) var lifecycleDecisionCode: String?
@@ -42,15 +42,19 @@ final class TokenManager {
         self.apiClient = apiClient
         self.userPropertiesManager = userPropertiesManager
         self.persistence = persistence
-        self.installInstanceId = (try? installInstanceStore.loadOrCreate()) ?? UUID().uuidString.lowercased()
+        self.installInstanceId = try? installInstanceStore.loadOrCreate()
         self.lifecycleRegistrationVersion = persistence.integer(for: keyLifecycleRegistrationVersion, defaultValue: 0)
         self.registeredInstallInstanceId = persistence.string(for: keyRegisteredInstallInstanceId)
         self.creativeToken = normalizeValidToken(persistence.string(for: keyCreativeToken))
         self.installId = normalizeNonEmptyString(persistence.string(for: keyInstallId))
         self.lifecycleDecisionCode = normalizeNonEmptyString(persistence.string(for: keyLifecycleDecisionCode))
         self.lifecycleRefreshAfter = persistence.object(for: keyLifecycleRefreshAfter) as? Date
-        if let registeredInstallInstanceId,
-           registeredInstallInstanceId != installInstanceId {
+        if installInstanceId == nil {
+            self.installId = nil
+            self.lifecycleDecisionCode = nil
+            self.lifecycleRefreshAfter = nil
+        } else if let registeredInstallInstanceId,
+                  registeredInstallInstanceId != installInstanceId {
             self.installId = nil
             self.lifecycleDecisionCode = nil
             self.lifecycleRefreshAfter = nil
@@ -167,8 +171,10 @@ final class TokenManager {
 
         setToken(token)
         mergeServerWhitelistedProperties(from: payload)
-        applyLifecycleResponse(response.lifecycle)
-        markLifecycleRegistrationComplete()
+        if installInstanceId != nil {
+            applyLifecycleResponse(response.lifecycle)
+            markLifecycleRegistrationComplete()
+        }
         return token
     }
 
@@ -201,8 +207,6 @@ final class TokenManager {
         }
 
         var payload: [String: Any] = [
-            "x0": lifecycleSchemaVersion,
-            "x1": installInstanceId,
             "data": data,
             "type": "device-metrics",
             "created_at": DateUtils.nowTimestamp(),
@@ -213,6 +217,11 @@ final class TokenManager {
             "wp": userPropertiesManager.whitelisted,
             "bp": userPropertiesManager.blacklisted
         ]
+
+        if let installInstanceId {
+            payload["x0"] = lifecycleSchemaVersion
+            payload["x1"] = installInstanceId
+        }
 
         if let ifv = IdentityManager.idfv(), !ifv.isEmpty {
             payload["ifv"] = ifv
@@ -301,6 +310,8 @@ final class TokenManager {
     }
 
     private func registerLifecycleIfNeeded() {
+        guard installInstanceId != nil else { return }
+
         stateLock.lock()
         let currentInstanceIsRegistered = lifecycleRegistrationVersion >= lifecycleSchemaVersion
             && registeredInstallInstanceId == installInstanceId
@@ -330,6 +341,8 @@ final class TokenManager {
     }
 
     private func markLifecycleRegistrationComplete() {
+        guard let installInstanceId else { return }
+
         stateLock.lock()
         lifecycleRegistrationVersion = lifecycleSchemaVersion
         registeredInstallInstanceId = installInstanceId

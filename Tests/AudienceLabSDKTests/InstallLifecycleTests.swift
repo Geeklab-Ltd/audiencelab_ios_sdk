@@ -94,6 +94,48 @@ final class InstallLifecycleTests: XCTestCase {
         XCTAssertNil(manager.installId)
     }
 
+    func testStorageFailureUsesLegacyTokenFlowWithoutLifecycleContext() {
+        let context = TestContext()
+        let apiClient = MockTokenAPIClient(result: .success([
+            "token": "legacy-token",
+            "x7": "must-not-be-cached",
+            "x9": "must-not-be-cached",
+            "xm": "2026-12-01T10:15:30Z"
+        ]))
+        let manager = TokenManager(
+            apiClient: apiClient,
+            userPropertiesManager: UserPropertiesManager(),
+            persistence: context.persistence,
+            installInstanceStore: FailingInstallInstanceStore()
+        )
+        let completion = expectation(description: "legacy token fetch completes")
+
+        manager.fetchCreativeToken { result in
+            XCTAssertEqual(try? result.get(), "legacy-token")
+            completion.fulfill()
+        }
+
+        wait(for: [completion], timeout: 1)
+        XCTAssertNil(manager.installInstanceId)
+        XCTAssertEqual(apiClient.postBodies.count, 1)
+        XCTAssertNil(apiClient.postBodies.first?["x0"])
+        XCTAssertNil(apiClient.postBodies.first?["x1"])
+        XCTAssertNil(manager.installId)
+        XCTAssertNil(manager.lifecycleDecisionCode)
+        XCTAssertNil(manager.lifecycleRefreshAfter)
+        XCTAssertEqual(manager.creativeToken, "legacy-token")
+
+        let cachedClient = MockTokenAPIClient(result: .success(["token": "legacy-token"]))
+        let relaunched = TokenManager(
+            apiClient: cachedClient,
+            userPropertiesManager: UserPropertiesManager(),
+            persistence: context.persistence,
+            installInstanceStore: FailingInstallInstanceStore()
+        )
+        relaunched.fetchCreativeToken { _ in }
+        XCTAssertTrue(cachedClient.postBodies.isEmpty)
+    }
+
     func testEventEnvelopeIncludesCanonicalInstallIdWhenCached() {
         let envelope = EventEnvelope(
             type: "custom",
@@ -184,5 +226,15 @@ private final class MockTokenAPIClient: TokenAPIClient {
         postBodies.append(body)
         onPost?()
         completion(result)
+    }
+}
+
+private struct FailingInstallInstanceStore: InstallInstanceIDProviding {
+    enum StorageError: Error {
+        case unavailable
+    }
+
+    func loadOrCreate() throws -> String {
+        throw StorageError.unavailable
     }
 }

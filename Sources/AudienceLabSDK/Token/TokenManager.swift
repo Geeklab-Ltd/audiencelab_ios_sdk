@@ -312,7 +312,12 @@ final class TokenManager {
 
         guard shouldRegister else { return }
 
-        apiClient.post(path: Endpoints.fetchToken, body: fetchTokenPayload()) { [weak self] result in
+        var registrationPayload = fetchTokenPayload()
+        if let cachedToken = normalizeValidToken(creativeToken) {
+            registrationPayload["creativeToken"] = cachedToken
+        }
+
+        apiClient.post(path: Endpoints.fetchToken, body: registrationPayload) { [weak self] result in
             guard let self else { return }
 
             self.stateLock.lock()

@@ -8,6 +8,7 @@ The Audiencelab iOS SDK registers a local installation with the existing fetch-t
 | --- | --- | --- | --- |
 | `x0` | Lifecycle schema version | integer | Sent as `2`. |
 | `x1` | Local install-instance ID | string | Random UUID created once per installation. |
+| `creativeToken` | Existing creative token | string | Sent only by the background upgrade/reinstall registration when a valid token is already cached. |
 
 The install-instance ID is stored in the app's Application Support directory and excluded from device backups. It survives app and SDK updates, is deleted with the app sandbox on uninstall, and is not restored from backup. The SDK does not send platform installation timestamps in this contract.
 

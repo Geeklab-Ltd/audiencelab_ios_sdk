@@ -37,6 +37,7 @@ final class InstallLifecycleTests: XCTestCase {
 
         XCTAssertEqual(payload["x0"] as? Int, 2)
         XCTAssertEqual(payload["x1"] as? String, "local-install-123")
+        XCTAssertNil(payload["creativeToken"])
         XCTAssertNil(payload["x2"])
         XCTAssertNil(payload["x3"])
     }
@@ -62,6 +63,7 @@ final class InstallLifecycleTests: XCTestCase {
         XCTAssertEqual(apiClient.postBodies.count, 1)
         XCTAssertEqual(apiClient.postBodies.first?["x0"] as? Int, 2)
         XCTAssertEqual(apiClient.postBodies.first?["x1"] as? String, "local-install-123")
+        XCTAssertEqual(apiClient.postBodies.first?["creativeToken"] as? String, "cached-token")
 
         manager.fetchCreativeToken { _ in }
         XCTAssertEqual(apiClient.postBodies.count, 1)

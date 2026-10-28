@@ -3,7 +3,11 @@ import Foundation
 #if DEBUG
 enum DebugUtilities {
     private static let redactedKeys: Set<String> = [
+        "aid",
+        "asid",
         "creativeToken",
+        "ga",
+        "ifv",
         "token",
         "x1",
         "x7"

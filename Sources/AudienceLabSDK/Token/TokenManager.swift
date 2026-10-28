@@ -2,6 +2,8 @@ import Foundation
 
 final class TokenManager {
     private let keyCreativeToken = "AudienceLabSDK_CreativeToken"
+    private let keyInstallId = "AudienceLabSDK_InstallId"
+    private let keyLifecycleRefreshAfter = "AudienceLabSDK_LifecycleRefreshAfter"
     private let initialDelayMs: Int = 5000
     private let maxDelayMs: Int = 300_000
     private let maxAttempts: Int = 10
@@ -9,6 +11,9 @@ final class TokenManager {
     private let apiClient: APIClient
     private let userPropertiesManager: UserPropertiesManager
     private(set) var creativeToken: String?
+    private(set) var installId: String?
+    private(set) var lifecycleDecisionCode: String?
+    private(set) var lifecycleRefreshAfter: Date?
     private(set) var lastFetchStatus: String = "idle"
     private(set) var lastAttemptAtMillis: TimeInterval?
     private(set) var attemptCount: Int = 0
@@ -23,6 +28,8 @@ final class TokenManager {
         self.apiClient = apiClient
         self.userPropertiesManager = userPropertiesManager
         self.creativeToken = normalizeValidToken(PersistenceManager.shared.string(for: keyCreativeToken))
+        self.installId = normalizeNonEmptyString(PersistenceManager.shared.string(for: keyInstallId))
+        self.lifecycleRefreshAfter = PersistenceManager.shared.object(for: keyLifecycleRefreshAfter) as? Date
         if creativeToken != nil {
             lastFetchStatus = "token_available"
         }
@@ -94,14 +101,12 @@ final class TokenManager {
 
             switch result {
             case .success(let response):
-                guard let token = self.normalizeValidToken(response["token"] as? String) else {
+                guard let token = self.processFetchTokenResponse(response) else {
                     self.lastFetchStatus = "invalid_token"
                     self.finishFetch(.failure(APIClientError.noData))
                     return
                 }
 
-                self.setToken(token)
-                self.mergeServerWhitelistedProperties(from: response)
                 self.lastFetchStatus = "ok"
                 self.attemptCount = 0
                 self.nextRetryAtMillis = nil
@@ -124,6 +129,17 @@ final class TokenManager {
                 }
             }
         }
+    }
+
+    @discardableResult
+    func processFetchTokenResponse(_ payload: [String: Any]) -> String? {
+        let response = FetchTokenResponse(payload: payload)
+        guard let token = normalizeValidToken(response.token) else { return nil }
+
+        setToken(token)
+        mergeServerWhitelistedProperties(from: payload)
+        applyLifecycleResponse(response.lifecycle)
+        return token
     }
 
     func fetchTokenPayload(device: DeviceInfo = DeviceInfoCollector.collect()) -> [String: Any] {
@@ -233,14 +249,36 @@ final class TokenManager {
         }
     }
 
+    private func applyLifecycleResponse(_ response: LifecycleResponse?) {
+        guard let response else { return }
+
+        lifecycleDecisionCode = response.decisionCode
+
+        if let installId = normalizeNonEmptyString(response.installId) {
+            self.installId = installId
+            PersistenceManager.shared.set(installId, for: keyInstallId)
+        }
+
+        if let refreshAfter = response.refreshAfter {
+            lifecycleRefreshAfter = refreshAfter
+            PersistenceManager.shared.set(refreshAfter, for: keyLifecycleRefreshAfter)
+        }
+    }
+
     private func normalizeValidToken(_ token: String?) -> String? {
-        let normalized = token?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = normalizeNonEmptyString(token)
         guard let normalized, !normalized.isEmpty else {
             return nil
         }
         if normalized.caseInsensitiveCompare("bin") == .orderedSame {
             return nil
         }
+        return normalized
+    }
+
+    private func normalizeNonEmptyString(_ value: String?) -> String? {
+        let normalized = value?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let normalized, !normalized.isEmpty else { return nil }
         return normalized
     }
 

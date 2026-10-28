@@ -152,5 +152,6 @@ Current SDK line:
 # Additional References
 
 - [Integration Guide](docs/INTEGRATION.md)
+- [Fetch-token response compatibility](docs/FETCH_TOKEN_CONTRACT.md)
 - [Changelog](CHANGELOG.md)
 - [License](LICENSE.md)

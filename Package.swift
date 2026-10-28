@@ -17,6 +17,11 @@ let package = Package(
         .target(
             name: "AudienceLabSDK",
             path: "Sources/AudienceLabSDK"
+        ),
+        .testTarget(
+            name: "AudienceLabSDKTests",
+            dependencies: ["AudienceLabSDK"],
+            path: "Tests/AudienceLabSDKTests"
         )
     ]
 )
